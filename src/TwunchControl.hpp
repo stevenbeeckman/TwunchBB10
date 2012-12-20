@@ -11,6 +11,8 @@
 #include <bb/cascades/CustomControl>
 #include <bb/cascades/Container>
 
+#include <QObject>
+
 using namespace bb::cascades;
 
 namespace bb
@@ -24,15 +26,18 @@ namespace bb
     }
 }
 
-class TwunchControl: public bb::cascades::CustomControl
+class TwunchControl: public CustomControl
 {
 
 public:
+
     /**
      * Constructor; sets up the label recipe.
      * @param parent The parent Container, if not specified, 0 is used.
      */
 	TwunchControl(Container *parent = 0);
+
+	void setTwunch(QVariantMap *map);
 
 private:
     /**
@@ -48,6 +53,7 @@ private:
     Label *setUpLabelWithStyle(const QString labelText, const TextStyle &textStyle, bool rightAlign,
             Color color, bool isBold);
     Container *twunchContainer;
+    QVariantMap *twunchMap;
 };
 
 

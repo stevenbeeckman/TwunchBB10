@@ -12,10 +12,12 @@
 #include <bb/cascades/StackLayout>
 #include <bb/cascades/SystemDefaults>
 #include <bb/cascades/TextStyle>
+#include <bb/cascades/ListView>
+#include <bb/cascades/QListDataModel>
 
 using namespace bb::cascades;
 
-Twunch::Twunch(Container *parent) :
+TwunchControl::TwunchControl(Container *parent) :
         CustomControl(parent)
 {
 	twunchContainer = new Container();
@@ -23,15 +25,31 @@ Twunch::Twunch(Container *parent) :
 	twunchLayout->setOrientation(LayoutOrientation::TopToBottom);
 	twunchContainer->setLayout(twunchLayout);
 
-	twunchContainer->add(
-            setUpLabelWithStyle((const QString) "Twunch", SystemDefaults::TextStyles::bigText(),
-                    true, Color::Gray, true));
-
 	setRoot(twunchContainer);
 
 }
 
-Label *Twunch::setUpLabelWithStyle(const QString labelText, const TextStyle &textStyle,
+void TwunchControl::setTwunch(QVariantMap *map){
+	twunchMap = map;
+	qDebug() << "\nTwunchControl::setTwunch() " << map;
+	qDebug() << "\nTwunchControl::setTwunch() " << twunchMap;
+	qDebug() << "\nTwunchControl::setTwunch() " << twunchMap->value("address");
+	qDebug() << "\nTwunchControl::setTwunch() " << twunchMap->value("date");
+	twunchContainer->add(setUpLabelWithStyle(twunchMap->value("date").toString(), SystemDefaults::TextStyles::bodyText(), false, Color::Gray, true));
+	twunchContainer->add(setUpLabelWithStyle(twunchMap->value("address").toString(), SystemDefaults::TextStyles::bodyText(), false, Color::Gray, true));
+	twunchContainer->add(setUpLabelWithStyle(twunchMap->value("closed").toString(), SystemDefaults::TextStyles::primaryText(), false, Color::White, true));
+	twunchContainer->add(setUpLabelWithStyle(twunchMap->value("note").toString(), SystemDefaults::TextStyles::primaryText(), false, Color::White, true));
+	twunchContainer->add(setUpLabelWithStyle(twunchMap->value("sponsored").toString(), SystemDefaults::TextStyles::primaryText(), false, Color::White, true));
+
+	QMap<QString, QVariant> participantsMap = (QMap<QString, QVariant>) twunchMap->value("participants").toMap();
+	QList<QVariant> participants = participantsMap.value("participant").toList();
+	twunchContainer->add(setUpLabelWithStyle(QString::number(participants.length()).append(" participants:"), SystemDefaults::TextStyles::primaryText(), false, Color::White, true));
+	ListView *participantsListView = new ListView();
+	participantsListView->setDataModel(new ArrayDataModel(participants));
+	twunchContainer->add(participantsListView);
+}
+
+Label *TwunchControl::setUpLabelWithStyle(const QString labelText, const TextStyle &textStyle,
         bool rightAlign, Color color, bool isBold)
 {
     Q_UNUSED(color);

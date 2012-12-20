@@ -47,9 +47,17 @@ Twunch::Twunch(bb::cascades::Application *app)
 
     mActivityIndicator = root->findChild<ActivityIndicator*>("indicator");
     mListView = root->findChild<ListView*>("twunches");
-    mNavPane = root->findChild<NavigationPane*>("navigationPane");
+    //mNavPane = root->findChild<NavigationPane*>("navigationPane");
+    mNavPane = (NavigationPane *) root;
+    mNavPane->setPeekEnabled(true);
+	connect(mNavPane, SIGNAL(topChanged(bb::cascades::Page* )), this,
+            SLOT(onTopChanged(bb::cascades::Page* )));
+    connect(mNavPane, SIGNAL(popTransitionEnded(bb::cascades::Page *)), this,
+            SLOT(onPopTransitionEnded(bb::cascades::Page *)));
     mNetworkAccessManager = new QNetworkAccessManager(this);
     mContentPage = createContentPage();
+
+    qDebug() << "\nmNavPane: " << mNavPane;
 
     bool result = connect(mNetworkAccessManager, SIGNAL(finished(QNetworkReply*)), this, SLOT(requestFinished(QNetworkReply*)));
     Q_ASSERT(result);
@@ -78,6 +86,7 @@ void Twunch::requestFinished(QNetworkReply* reply){
 		}
 
 		mFile->write(reply->readAll());
+		mFile->resize(mFile->pos()); // delete the bigger part cfr http://www.qtcentre.org/threads/18109-how-can-i-clear-a-file
 		mFile->flush();
 		mFile->close();
 
@@ -121,7 +130,10 @@ void Twunch::onTopChanged(bb::cascades::Page* page)
 {
     if (page != mContentPage) {
         // Reset list selection when the main container Page is not the Content Page
+    	qDebug() << "\nTwunch::onTopChanged()";
         mListView->clearSelection();
+        qDebug() << "\nTwunch::onTopChanged() - clearSelection() worked";
+
     }
 
     // We only want the app to be in Portrait mode when viewing ListView
@@ -150,7 +162,6 @@ Page *Twunch::createContentPage()
 
     // Set the background and layout
     content->setLayout(StackLayout::create());
-
     // Add the ContentContainer to the content Page
     page->setContent(content);
 
@@ -163,65 +174,42 @@ void Twunch::onTriggered(const QVariantList indexPath)
 
 	QVariantMap twunchMap = model->data(indexPath).toMap();
 	qDebug() << "\nTwunch::onTriggered(): " << twunchMap;
-	//Container *twunchContainer = new Container();
-	//qDebug() << "\nCreated twunchContainer";
+
+
 	QString title = twunchMap.value("title").toString();
-	qDebug() << "\nTitle: " << title;
-    Label *twunchTitle = Label::create().text(title);
-    qDebug() << "\nCreated twunchTitle";
-    //twunchContainer->add(twunchTitle);
-    //qDebug() << "\nAdded twunchTitle to twunchContainer";
 
     twunchControl = new TwunchControl();
+    ((TwunchControl *) twunchControl)->setTwunch(&twunchMap);
 
     Container *content = qobject_cast<Container *>(mContentPage->content());
-    qDebug() << "\nGot the content of mContentPage";
     if(twunchControl){
-    	if(content && mContentPage){
-			content->add(twunchTitle);
-			qDebug() << "\nAdded twunchContainer to content. Pushing mContentPage now...";
-			mContentPage->titleBar()->setTitle(title);
-			mNavPane->push(mContentPage);
-			qDebug() << "\nPushed mContentPage";
+    	if(content){
+    		if(mContentPage){
+    			twunchControl->setHorizontalAlignment(HorizontalAlignment::Center);
+    			content->add(twunchControl);
+				mContentPage->titleBar()->setTitle(title);
+				mNavPane->push(mContentPage);
+    		}
+
 		}
     }
 
-
-    /*if (recipe) {
-        // Get the content Container of the ContentPage, add the new recipe, it will be removed when
-        // the popTransitionEnded signal is received in the onPopTransitionEnded function.
-        Container *content = qobject_cast<Container *>(mContentPage->content());
-
-        if (content) {
-            recipe->setHorizontalAlignment(HorizontalAlignment::Center);
-            recipe->setVerticalAlignment(VerticalAlignment::Center);
-            content->add(recipe);
-            mContentPage->titleBar()->setTitle(title);
-            mNavPane->push(mContentPage);
-        } else {
-            delete recipe;
-        }
-
-    } else {
-        qDebug("No Twunch found for this selection. Here be dragons.");
-    }*/
 
 }
 
 void Twunch::onPopTransitionEnded(bb::cascades::Page *page)
 {
     if (page == mContentPage) {
-    	qDebug() << "in Twunch::onPopTransitionEnded()";
 
-        // When the transition from the content page is complete, the recipe is removed.
+        // When the transition from the content page is complete, the twunchControl is removed.
         Container *content = qobject_cast<Container *>(mContentPage->content());
 
         if (content) {
-            Control *recipeControl = content->at(0);
+            Control *twunchControl = content->at(0);
 
             // Remove the current recipe once we return to the ListView
-            if (recipeControl && content->remove(recipeControl)) {
-                delete recipeControl;
+            if (twunchControl && content->remove(twunchControl)) {
+                delete twunchControl;
             }
         }
     }

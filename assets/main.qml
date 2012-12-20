@@ -3,9 +3,9 @@ import bb.cascades 1.0
 
 NavigationPane {
     id: navigationPane
-    onPopTransitionEnded: {
+    /*onPopTransitionEnded: {
         page.destroy();
-    }
+    }*/
     Page {
         actions: [
             ActionItem {
